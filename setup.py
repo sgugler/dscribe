@@ -1,4 +1,7 @@
 import sys
+import os
+
+os.environ['CC'] = '/home/cds/sgugler/Downloads/ccache-4.6.3-linux-x86_64/ccache gcc'
 
 # Check python version
 if sys.version_info[:2] < (3, 6):

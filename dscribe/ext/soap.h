@@ -121,7 +121,8 @@ class SOAPPolynomial: public Descriptor {
             double rcut,
             int nmax,
             int lmax,
-            double eta,
+            //double eta,
+            py::array_t<double> eta,
             py::dict weighting,
             bool crossover,
             string average,
@@ -167,7 +168,8 @@ class SOAPPolynomial: public Descriptor {
         const double rcut;
         const int nmax;
         const int lmax;
-        const double eta;
+        //const double eta;
+        const py::array_t<double> eta;
         const py::dict weighting;
         const bool crossover;
         const float cutoff_padding;

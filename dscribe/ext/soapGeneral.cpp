@@ -1513,7 +1513,24 @@ inline void expPs(double* rExpSum, double eta, double* r, double* ri, int isize,
     }
 }
 pair<int, int> getDeltas(double* dx, double* dy, double* dz, double* ri, double* rw, double rCut, double* oOri, double* oO4arri, double* minExp, double* pluExp, double eta, const py::array_t<double> &positions, const double ix, const double iy, const double iz, const vector<int> &indices, int rsize, int Ihpos, int Itype)
+//pair<int, int> getDeltas(double* dx, double* dy, double* dz, double* ri, double* rw, double rCut, double* oOri, double* oO4arri, double* minExp, double* pluExp, py::array_t<double> eta_arr, const py::array_t<double> &positions, const double ix, const double iy, const double iz, const vector<int> &indices, int rsize, int Ihpos, int Itype)
 {
+   //auto eta_unch_arr = eta_arr.unchecked<1>();
+
+   //double eta_avg = 0;
+   //for (int i = 0; i < eta_unch_arr.size(); i++)
+   //{
+   //    eta_avg += eta_unch_arr(i);
+   //}
+   //eta_avg /= eta_unch_arr.size();
+   //std::cout << "AVERAGE" << std::endl; 
+   //std::cout << eta_avg << std::endl; 
+
+   //         //##########################################
+   //         // s.t. all the following code still compiles
+   //         //auto eta_bla = eta_arr.unchecked<1>();
+   //         double eta = eta_unch_arr(0);
+
     int iNeighbour = 0;
     int iCenter = 0;
     double ri2;
@@ -1809,14 +1826,15 @@ void getP(py::detail::unchecked_mutable_reference<double, 2> &Ps, double* Cs, in
 void soapGeneral(
     py::array_t<double> PsArr,
     py::array_t<double> positions,
-    py::array_t<double> HposArr,
+    py::array_t<double> HposArr, //center
     py::array_t<int> atomicNumbersArr,
     py::array_t<int> orderedSpeciesArr,
     double rCut,
     double cutoffPadding,
     int nMax,
     int lMax,
-    double eta,
+    //double eta,
+    py::array_t<double> eta_arr,
     py::dict weighting,
     py::array_t<double> rwArr,
     py::array_t<double> gssArr,
@@ -1824,6 +1842,8 @@ void soapGeneral(
     string average,
     CellList cellList)
 {
+    
+
     int nAtoms = atomicNumbersArr.shape(0);
     int Nt = orderedSpeciesArr.shape(0);
     int Hs = HposArr.shape(0);
@@ -1862,21 +1882,34 @@ void soapGeneral(
         memset(CsAve, 0.0, nCoeffs*sizeof(double));
     }
 
+    std::cout << "LETS SEE" << std::endl;
+
     // Create a mapping between an atomic index and its internal index in the
     // output. The list of species is already ordered.
     map<int, int> ZIndexMap;
     for (int i = 0; i < species.size(); ++i) {
         ZIndexMap[species(i)] = i;
+        // for H2O, this is 1 0 8 1 (hydrogen, index 0, oxygen, index 1)
     }
 
     // Loop through central points
     for (int i = 0; i < Hs; i++) {
+
+        std::cout << i << std::endl;
+        std::cout << Hs << std::endl;
+        //for H2O this is 0 and 1
 
         // Get all neighbours for the central atom i
         double ix = Hpos[3*i];
         double iy = Hpos[3*i+1];
         double iz = Hpos[3*i+2];
         CellListResult result = cellList.getNeighboursForPosition(ix, iy, iz);
+
+        std::cout << ix << std::endl;
+        std::cout << iy << std::endl;
+        std::cout << iz << std::endl;
+        //std::cout << result << std::endl;
+        //for H2O this is 0, 0, 0.119, the pos of O
 
         // Sort the neighbours by type
         map<int, vector<int>> atomicTypeMap;
@@ -1886,7 +1919,20 @@ void soapGeneral(
         };
 
         // Loop through neighbours sorted by type
+        int i2 = 0;
+        auto eta_unch_arr = eta_arr.unchecked<1>();
+
         for (const auto &ZIndexPair : atomicTypeMap) {
+            double eta = eta_unch_arr(i2);
+
+            std::cout << "ZIndexPair" << std::endl;
+            std::cout << ZIndexPair.first << std::endl;
+            std::cout << ZIndexPair.second[0] << std::endl;
+            std::cout << ZIndexPair.second[1] << std::endl;
+            std::cout << ZIndexPair.second[2] << std::endl;
+            std::cout << ZIndexPair.second[3] << std::endl;
+            std::cout << ZIndexPair.second.size() << std::endl;
+            std::cout << "---" << std::endl;
 
             // j is the internal index for this atomic number
             int j = ZIndexMap[ZIndexPair.first];
@@ -1899,6 +1945,13 @@ void soapGeneral(
             pair<int, int> neighbours = getDeltas(dx, dy, dz, ris, rw, rCut, oOri, oO4arri, minExp, pluExp, eta, positions, ix, iy, iz, ZIndexPair.second, rsize, i, j);
             int nNeighbours = neighbours.first;
             int nCenters = neighbours.second;
+
+            i2++;
+            //##########################################
+            // s.t. all the following code still compiles
+            //auto eta_unch_arr = eta_arr.unchecked<1>();
+            //double eta = eta_unch_arr(0);
+
 
             getWeights(nNeighbours + min(nCenters, 1), ris, NULL, false, weighting, weights);
             Flir = getFlir(oO4arri, ris, minExp, pluExp, nNeighbours, rsize, lMax);

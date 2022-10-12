@@ -201,12 +201,16 @@ class SOAP(Descriptor):
         self.species = species
 
         # Test that general settings are valid
-        if sigma <= 0:
-            raise ValueError(
-                "Only positive gaussian width parameters 'sigma' are allowed."
-            )
-        self._eta = 1 / (2 * sigma**2)
+        sigma = np.broadcast_to(sigma, len(species))
+        if any(i <= 0 for i in sigma):
+            raise ValueError( "Only positive gaussian width parameters 'sigma' are allowed.")
+        self._eta = [1 / (2 * s**2) for s in sigma]
         self._sigma = sigma
+        
+        if len(self._sigma) != len(self.species):
+            raise ValueError(
+                "Length of species array is not the same as length of sigma array."
+            )
 
         supported_rbf = {"gto", "polynomial"}
         if rbf not in supported_rbf:
@@ -353,7 +357,8 @@ class SOAP(Descriptor):
         decay to the specified threshold value at the cutoff distance.
         """
         threshold = 0.001
-        cutoff_padding = self._sigma * np.sqrt(-2 * np.log(threshold))
+        # cutoff_padding = self._sigma * np.sqrt(-2 * np.log(threshold))
+        cutoff_padding = np.average(self._sigma) * np.sqrt(-2 * np.log(threshold))
         return cutoff_padding
 
     def _infer_r_cut(self, weighting):
@@ -576,6 +581,10 @@ class SOAP(Descriptor):
             gss = gss.flatten()
 
             # Calculate with extension
+            print("vvv")
+            print("positions", pos)
+            print("Z", Z)
+            print("^^^")
             soap_poly = dscribe.ext.SOAPPolynomial(
                 self._r_cut,
                 self._n_max,

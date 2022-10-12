@@ -187,7 +187,8 @@ SOAPPolynomial::SOAPPolynomial(
     double rcut,
     int nmax,
     int lmax,
-    double eta,
+    //double eta,
+    py::array_t<double> eta,
     py::dict weighting,
     bool crossover,
     string average,
@@ -201,7 +202,7 @@ SOAPPolynomial::SOAPPolynomial(
     , rcut(rcut)
     , nmax(nmax)
     , lmax(lmax)
-    , eta(eta)
+    , eta(eta) // eta() lebt von dem eta im .h file
     , weighting(weighting)
     , crossover(crossover)
     , cutoff_padding(cutoff_padding)
